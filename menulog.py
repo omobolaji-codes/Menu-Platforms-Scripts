@@ -184,4 +184,5 @@ def runAutomationMenuLog(sheetKey, url):
 # runAutomationMenuLog("Menulog: 137771198", "https://www.menulog.com.au/restaurants-kung-fu-dumplings-gurwood-st/menu?utm_source=google&utm_medium=organic&utm_campaign=orderaction")
 # runAutomationMenuLog("Menulog: 137771658", "https://www.menulog.com.au/restaurants-kung-fu-dumplings-sturt-mall/")
 # runAutomationMenuLog("Menulog: 138196682", "https://www.menulog.com.au/restaurants-joeys-pizza-pasta-gelato/menu?utm_source=joeyspizzapasta.com.au&utm_medium=microsites&utm_campaign=microsites")
-runAutomationMenuLog("Menulog: 138867419", "https://www.menulog.com.au/restaurants-king-of-kebabs-penrith/menu?utm_source=google&utm_medium=organic&utm_campaign=orderaction")
+# runAutomationMenuLog("Menulog: 138867419", "https://www.menulog.com.au/restaurants-king-of-kebabs-penrith/menu?utm_source=google&utm_medium=organic&utm_campaign=orderaction")
+runAutomationMenuLog("Extraction: 139050206 -- June 2020 V1.2", "https://www.menulog.com.au/restaurants-battambang-restaurant-i/menu?utm_source=google&utm_medium=organic&utm_campaign=orderaction")
