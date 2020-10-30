@@ -1,5 +1,5 @@
 from selenium import webdriver
-from selenium.common.exceptions import NoSuchElementException
+from selenium.common.exceptions import NoSuchElementException, ElementNotInteractableException
 import time
 import gspread  # Gspread to access google sheets
 from operator import itemgetter
@@ -14,7 +14,7 @@ def runAutomationBeyondMenu(sheetKey, url):
     # Open google sheet
     gc = gspread.service_account(filename="../service_account.json")
     sh = gc.open(sheetKey)
-    worksheet = sh.get_worksheet(1)
+    worksheet = sh.worksheet("Extraction")
 
     driver.get(url)
     time.sleep(10)
@@ -23,12 +23,12 @@ def runAutomationBeyondMenu(sheetKey, url):
     #loop through menu tabs if they exist
     menus = driver.find_elements_by_class_name("menu-category-link")
     print("number of menus", len(menus))
-    for menu in menus:
+    for menu in menus[2:]:
         try:
             #click on menu        
             driver.execute_script("arguments[0].click();", menu)
             print("Next menu clicked")
-            time.sleep(5) 
+            time.sleep(3) 
             menuText = menu.text
             if menuText:
                 menuTitle = "SEPARATE MENU " + "(" + menuText + ")"
@@ -42,7 +42,7 @@ def runAutomationBeyondMenu(sheetKey, url):
         categories = driver.find_elements_by_class_name("menu-groupitem-wrapper")
         print("num categories", len(categories))
         fullData = []
-        for category in categories:
+        for category in categories[23:]:
             categoryName = category.find_element_by_class_name("menu-groupheader-name").text.strip()
             try:
                 categoryDescription=category.find_element_by_class_name("menu-groupheader-desc").text.strip() #####
@@ -60,11 +60,17 @@ def runAutomationBeyondMenu(sheetKey, url):
             for menuItem in menuItems:
                 itemData = []
                 itemName=menuItem.find_elements_by_class_name("menu-item-link-itemname")[0].text.strip()
-                itemName = itemName.title().rstrip(".")
+                itemName = itemName.rstrip(".")
+
+                #convert first letter of each word to uppercase
+                itemName_list = [word.capitalize() for word in itemName.split()]
+                itemName = " ".join(itemName_list)
+
                 try:
                     itemDescription=menuItem.find_elements_by_class_name("menu-item-link-itemdesc")[0].text.strip()
                 except:
                     itemDescription=""
+
                 # get spicy tag from item name & add it to description    
                 if "Whatshot" in itemName:
                     itemName = itemName.replace("Whatshot", "")
@@ -76,7 +82,7 @@ def runAutomationBeyondMenu(sheetKey, url):
 
                 #click on each item
                 menuItem.click()
-                time.sleep(3)
+                time.sleep(6)
 
 
                 #get size extras
@@ -85,12 +91,12 @@ def runAutomationBeyondMenu(sheetKey, url):
                     #append item
                     itemList = ["Item", itemName, itemDescription, itemPrice, None, None, None, None, None, 0]
                     print("Item List", itemList)
-                    fullData.append(itemList)
+                    # fullData.append(itemList)
                     itemData.append(itemList)
 
                     #append extra
                     sizeExtra = ["Extra", "Serving Choice", None, None, None, None, 1, 1, 0, 0]
-                    fullData.append(sizeExtra)
+                    # fullData.append(sizeExtra)
                     itemData.append(sizeExtra)
                     for sizeOption in sizeOptions:
                         optionName = sizeOption.text
@@ -103,14 +109,20 @@ def runAutomationBeyondMenu(sheetKey, url):
                             optionPrice = 0
 
                         #convert sm to small & lg to large    
-                        if optionName == "Sm":
+                        if optionName == "Sm" or optionName == "Sm.":
                             optionName = "Small"
-                        if optionName == "Lg":
+                        if optionName == "Lg" or optionName == "Lg.":
                             optionName = "Large"
+
+                        #convert pt to pint & Qt to Quart   
+                        if optionName == "Pt":
+                            optionName = "Pint"
+                        if optionName == "Qt":
+                            optionName = "Quart"
 
                         #append options
                         optionList = ["Option", optionName, None, int(optionPrice - itemPrice), None, None, None, None, None, 0]
-                        fullData.append(optionList)
+                        # fullData.append(optionList)
                         itemData.append(optionList)   
                 elif len(sizeOptions) ==1 and '[' in sizeOptions[0].text:
                     size = sizeOptions[0].text
@@ -120,17 +132,16 @@ def runAutomationBeyondMenu(sheetKey, url):
                     itemDescription = itemDescription.strip()
                     itemList = ["Item", itemName, itemDescription, itemPrice, None, None, None, None, None, 0]
                     print("Item List", itemList)
-                    fullData.append(itemList)
+                    # fullData.append(itemList)
                     itemData.append(itemList)
 
                 else:
                     itemList = ["Item", itemName, itemDescription, itemPrice, None, None, None, None, None, 0]
                     print("Item List", itemList)
-                    fullData.append(itemList)
+                    # fullData.append(itemList)
                     itemData.append(itemList)
 
 
-                time.sleep(1.5)
 
                 #get extras
                 extraSections=driver.find_elements_by_class_name("mid-modifiertype-container")
@@ -152,7 +163,7 @@ def runAutomationBeyondMenu(sheetKey, url):
                         maxOption = maxOption[0]
                         extraName = extraName.replace(maxOption, "").replace("Up To", "").strip()
                         maxOption = int(maxOption)
-                    if extraName == "Would You Like To Add Extras?" or extraName == "Would you like to Add Side?":
+                    if extraName.lower() == "would you like to add extras?" or extraName.lower() == "would you like to add side?" or extraName.lower() == "would you like to add extra side?":
                         extraName = "Side"
                     
 
@@ -172,15 +183,22 @@ def runAutomationBeyondMenu(sheetKey, url):
                     if "Serve it" in extraName:
                         extraName = "Serving"
 
-                    extraName = extraName.title()
-                    extraName = extraName.replace("Choose", "").replace("Would You", "").replace("Add", "").replace("Like", "").replace("Prefer", "").replace("Only", "") \
-                            .replace("Extra", "").replace('How', "").replace("?", "").replace("Choice Of", "").replace("Options", "").replace("Your", "").lstrip("A ").lstrip("An ").lstrip("Of ").strip()
+                    #convert first letter of each word to uppercase
+                    extraName_list = [word.capitalize() for word in extraName.split()]
+                    extraName = " ".join(extraName_list)
+
+                    #replace unnecessary words with ""
+                    extraName = extraName.replace("Choose", "").replace("Would You", "").replace("Add", "").replace("Like", "") \
+                        .replace("Prefer", "").replace("Only", "").replace("Option", "").replace("For", "").replace("Extra", "") \
+                        .replace('How', "").replace("?", "").replace("Choice Of", "").replace("Options", "").replace("Your", "") \
+                        .lstrip("A ").lstrip("An ").lstrip("Of ").strip()
 
                     #get options          
                     allOptions = extraSection.find_elements_by_css_selector("div:nth-child(3) > div > div:nth-child(1) > label")
                     num_options = len(allOptions)
                     print("Number of options", num_options)
                     if "Choose any you want" in extraInstructions:
+                        minOption = 0
                         maxOption = int(num_options)
 
                     if extraName == "":
@@ -200,16 +218,17 @@ def runAutomationBeyondMenu(sheetKey, url):
                         extraName = extraName.replace(extraName, "Item Selection")
 
                     extraList = ["Extra", extraName, None, None, None, None, minOption, maxOption, 0, 0]
-                    fullData.append(extraList)
+                    # fullData.append(extraList)
                     print("Extra List", extraList)
                     itemData.append(extraList)
 
-                    time.sleep(1.5)
                     allOptions = extraSection.find_elements_by_css_selector("div:nth-child(3) > div > div:nth-child(1) > label")
                     optionBasePrice=0
                     for option in allOptions:
-                        optionName=option.text
-                        optionName = optionName.replace("Add", "").replace("[", "").replace("+", "").replace("]", "")
+                        # allOption = extraSection.find_elements_by_css_selector("div:nth-child(3) > div > div:nth-child(1) > label")
+                        optionName = option.text
+                        optionName = optionName.title()
+                        optionName = optionName.replace("Add", "").replace("Extra", "").replace("[", "").replace("+", "").replace("]", "")
                         if "$" in optionName:
                             optionPrice = optionName.split("$")[1]
                             optionPrice = optionPrice.replace(".", "").replace("+", "").replace(",","").strip().lstrip("0")
@@ -217,37 +236,20 @@ def runAutomationBeyondMenu(sheetKey, url):
                         else:
                             optionPrice = 0
                         optionList = ["Option", optionName, None, int(optionPrice) - optionBasePrice, None, None, None, None, None, 0]
-                        fullData.append(optionList)
+                        # fullData.append(optionList)
                         print("Option List", optionList)
                         itemData.append(optionList)
-                        time.sleep(1.1)  
 
 
-                time.sleep(2)
+                time.sleep(1)
                 driver.find_element_by_class_name("mid-close-button-container").click()
                 print("ITEM DONE! Modal closed.")
-                time.sleep(3)
+                time.sleep(2)
                 print()
 
                 worksheet.append_rows(values=itemData, value_input_option='RAW')
 
         # worksheet.append_rows(values=fullData, value_input_option='RAW')
-        time.sleep(4)
-
-        # menus_ = driver.find_elements_by_class_name("menu-category-link")
-        # try:
-        #     #click on menu        
-        #     driver.execute_script("arguments[0].click();", menus_[i+1])
-        #     print("Next menu clicked")
-        #     time.sleep(5) 
-        #     menuText = menu.text
-        #     if menuText:
-        #         menuTitle = "SEPARATE MENU " + "(" + menuText + ")"
-        #         worksheet.append_row(values=[None, None, None, None, None, None, None, None, None, 0])
-        #         worksheet.append_row(values = [menuTitle, None, None, None, None, None, None, None, None, 0])
-        # except ElementNotInteractableException:
-        #     print("No menu tab to click")
-        #     pass
 
     driver.quit()
 
@@ -259,16 +261,21 @@ def runAutomationBeyondMenu(sheetKey, url):
 #run sample menu
 # runAutomationBeyondMenu("BeyondMenu 1", "https://www.beyondmenu.com/54514/robbinsville/bagels-n--cream-robbinsville-08691.aspx")
 
-#menu platforms test
+#menu platforms test samples
 # runAutomationBeyondMenu("Beyond: 136678225", "https://www.beyondmenu.com/30494/san-francisco/punjab-kabab-house-san-francisco-94102.aspx?utm_source=satellite&utm_medium=menu_group&pk_vid=c601f0d4697912f21603216176aaddfb#group_2659835")
 # runAutomationBeyondMenu("Beyond: 136267330", "https://www.beyondmenu.com/23590/tahlequah/asian-star-tahlequah-74464.aspx?utm_source=satellite&utm_medium=menu_btn_order&pk_vid=26bbf217afd93933160269586946db1b")
 # runAutomationBeyondMenu("Beyond: 134726330", "https://www.beyondmenu.com/36199/ellenton/tokyo-thai-ellenton-34222.aspx?utm_source=satellite&utm_medium=menu_group&pk_vid=cfba57db8a8da65c1602258871b67f75#group_2427776")
 # runAutomationBeyondMenu("Beyond: 135168553", "https://www.beyondmenu.com/22861/san-francisco/jasmine-tea-house-san-francisco-94110.aspx?utm_source=satellite&utm_medium=menu_group&pk_vid=bcb68adf7a58cf091602261309e3f8f7#group_2210998")
 # runAutomationBeyondMenu("Beyond: 134577832", "https://www.beyondmenu.com/28333/evans-mills/ruyi-sushi-evans-mills-13637.aspx")
 # runAutomationBeyondMenu("Beyond: 133673107", "https://www.beyondmenu.com/23336/colorado-springs/thai-basil-colorado-springs-80920.aspx?utm_source=satellite&utm_medium=menu_group&pk_vid=e208fca70bd82d52160166097029cc7c#group_1842741")
-runAutomationBeyondMenu("Beyond: 133474485", "https://www.beyondmenu.com/25706/waco/summer-palace-chinese-buffet-waco-76710.aspx?utm_source=satellite&utm_medium=home_order&pk_vid=fcd4c39abbcac119160158788927159c")
+# runAutomationBeyondMenu("Beyond: 133474485", "https://www.beyondmenu.com/25706/waco/summer-palace-chinese-buffet-waco-76710.aspx?utm_source=satellite&utm_medium=home_order&pk_vid=fcd4c39abbcac119160158788927159c")
 # runAutomationBeyondMenu("Beyond: 131467665", "https://www.beyondmenu.com/53208/port-saint-lucie/ikura-sushi-and-hibachi-port-saint-lucie-34952.aspx")
 # runAutomationBeyondMenu("Beyond: 133205999", "https://www.beyondmenu.com/34293/baltimore/darbar-baltimore-21231.aspx?utm_source=satellite&utm_medium=menu_group&pk_vid=89c125dc1c6ea08c16014966901767c7#group_2061306")
 # runAutomationBeyondMenu("Beyond: 133239416", "https://www.beyondmenu.com/55015/brooklyn/i-love-dimsum-brooklyn-11223.aspx?utm_source=satellite&utm_medium=home_order&_")
 # runAutomationBeyondMenu("Beyond: 132900648", "https://www.beyondmenu.com/53623/maryland-heights/china-1-maryland-heights-63043.aspx")
 # runAutomationBeyondMenu("Beyond: 131713524", "https://www.beyondmenu.com/51129/yonkers/new-world-yonkers-10705.aspx?utm_source=satellite&utm_medium=menu_group&pk_vid=dd06049be5b26dde1601324137b67f75#group_2630084")
+
+
+#run real samples
+# runAutomationBeyondMenu("Beyond: 137836845", "https://www.beyondmenu.com/49420/tannersville/chopstick-tannersville-18372.aspx")
+runAutomationBeyondMenu("Extraction: 139424452 -- June 2020 V1.2", "https://www.beyondmenu.com/27053/lake-mary/chopstix-sushi-chinese-restaurant-lake-mary-32746.aspx?utm_source=satellite&utm_medium=menu_group&pk_vid=6d4e82ff797f9ce9160390733302b6f5#group_1856114")

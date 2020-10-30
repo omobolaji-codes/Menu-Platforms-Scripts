@@ -19,7 +19,7 @@ def runAutomationWaitrapp(sheetKey, url):
     # Open google sheet
     gc = gspread.service_account(filename="../service_account.json")
     sh = gc.open(sheetKey)
-    worksheet = sh.get_worksheet(1)
+    worksheet = sh.worksheet("Extraction")
 
     driver.get(url)
     print("getting url ...")
@@ -48,8 +48,8 @@ def runAutomationWaitrapp(sheetKey, url):
 
         categories = driver.find_elements_by_class_name("item_containers")
         print(len(categories))
-        time.sleep(2)
-        for category in categories:
+        time.sleep(0.5)
+        for category in categories[1:2]:
             sectionName = category.find_element_by_class_name("h3_title").text
             if "Breakfast" in sectionName or "Lunch" in sectionName or "Dinner" in sectionName or "Catering" in sectionName:
                 worksheet.append_row(values=[None, None, None, None, None, None, None, None, None, 0])
@@ -84,7 +84,7 @@ def runAutomationWaitrapp(sheetKey, url):
                     pass
 
                 items[i].click()
-                time.sleep(5)
+                time.sleep(3)
 
                 #get extra
                 try:
@@ -249,3 +249,4 @@ def runAutomationWaitrapp(sheetKey, url):
 
 # runAutomationWaitrapp("Waitrapp: 138110412", "https://waitrapp.com/restaurants/al/mobile/charm-thai-kitchen-sushi-bar/11484")
 # runAutomationWaitrapp("Waitrapp: 138086260", "https://waitrapp.com/restaurants/la/houma/pvo-bistro-lounge/9011")
+# runAutomationWaitrapp("Beyond: 133474485", "https://waitrapp.com/restaurants/al/montgomery/hunt-brothers-pizza-south-west-cheveron/18869")

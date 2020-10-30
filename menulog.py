@@ -23,7 +23,7 @@ def runAutomationMenuLog(sheetKey, url):
     # Open google sheet
     gc = gspread.service_account(filename="../service_account.json")
     sh = gc.open(sheetKey)
-    worksheet = sh.get_worksheet(1)
+    worksheet = sh.worksheet("Extraction")
 
     driver.get(url)
     time.sleep(10)
@@ -106,9 +106,11 @@ def runAutomationMenuLog(sheetKey, url):
 
             #click each item to extract options
             items[i].click()
-            time.sleep(8)
+            time.sleep(2)
+
             extras = driver.find_elements_by_class_name("accessories-option.accordion.accordion--ruled.accordion--autotoggle")
             if extras:
+                time.sleep(3)
                 for extra in extras:
                     extraName_ = ""  
                     options_ = extra.find_elements_by_class_name("box.accessory-name")
@@ -185,4 +187,10 @@ def runAutomationMenuLog(sheetKey, url):
 # runAutomationMenuLog("Menulog: 137771658", "https://www.menulog.com.au/restaurants-kung-fu-dumplings-sturt-mall/")
 # runAutomationMenuLog("Menulog: 138196682", "https://www.menulog.com.au/restaurants-joeys-pizza-pasta-gelato/menu?utm_source=joeyspizzapasta.com.au&utm_medium=microsites&utm_campaign=microsites")
 # runAutomationMenuLog("Menulog: 138867419", "https://www.menulog.com.au/restaurants-king-of-kebabs-penrith/menu?utm_source=google&utm_medium=organic&utm_campaign=orderaction")
-runAutomationMenuLog("Extraction: 139050206 -- June 2020 V1.2", "https://www.menulog.com.au/restaurants-battambang-restaurant-i/menu?utm_source=google&utm_medium=organic&utm_campaign=orderaction")
+# runAutomationMenuLog("Extraction: 139050206 -- June 2020 V1.2", "https://www.menulog.com.au/restaurants-battambang-restaurant-i/menu?utm_source=google&utm_medium=organic&utm_campaign=orderaction")
+# runAutomationMenuLog("Extraction: 139520378 -- June 2020 V1.2", "https://www.menulog.com.au/restaurants-delish-pork-roll-newtown/menu/")
+# runAutomationMenuLog("Extraction: 134916995 -- June 2020 V1.2", "https://www.menulog.com.au/restaurants-mr-noodles/menu/collection?preorderAgreed=true")
+# runAutomationMenuLog("Extraction: 137994844 -- June 2020 V1.2", "https://www.menulog.com.au/restaurants-golden-barbeque-karawara/menu/collection?preorderAgreed=true")
+
+# runAutomationMenuLog("Extraction: 139143202 -- June 2020 V1.2", "https://www.menulog.com.au/restaurants-masala-indian-cuisine-rockhampton/menu")
+runAutomationMenuLog("Extraction: 139347723 -- June 2020 V1.2", "https://www.menulog.com.au/restaurants-scarfacepizzeria-northcote/menu/collection?preorderAgreed=true")
